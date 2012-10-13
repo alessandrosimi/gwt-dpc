@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module>
+
+	<!-- Specify the paths for translatable code -->
+	<source path="client" />
+	<source path="shared" />
+
+	<generate-with class="com.googlecode.gwt.dpc.rebind.DpcGenerator">
+		<when-type-assignable class="com.googlecode.gwt.dpc.client.Dpc" />
+	</generate-with>
+</module>
