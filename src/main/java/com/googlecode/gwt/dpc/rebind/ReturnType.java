@@ -1,13 +1,10 @@
 package com.googlecode.gwt.dpc.rebind;
 
-import com.googlecode.gwt.dpc.shared.Result;
-
 import com.google.gwt.core.ext.typeinfo.JClassType;
 import com.google.gwt.core.ext.typeinfo.JPrimitiveType;
 import com.google.gwt.core.ext.typeinfo.JType;
 
 public enum ReturnType {
-	RESULT,
 	PRIMITIVE,
 	CLASS;
     
@@ -18,13 +15,7 @@ public enum ReturnType {
     	} else {
     		JClassType classType = returnType.isClass();
     		if(classType != null) {
-    			// TODO Verify if the class extends indirectly Result and if it has only permitted inputs.
-    			JClassType superClass = classType.getSuperclass();
-    			if(superClass != null && superClass.getQualifiedSourceName().equals(Result.class.getName())) {
-    				return ReturnType.RESULT;
-    			} else {
-    				return ReturnType.CLASS;
-    			}
+    			return ReturnType.CLASS;
     		} else {
     			return null;
     		}

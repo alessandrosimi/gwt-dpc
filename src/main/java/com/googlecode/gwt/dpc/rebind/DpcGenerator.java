@@ -15,20 +15,23 @@ import com.google.gwt.core.ext.typeinfo.JType;
 import com.google.gwt.core.ext.typeinfo.TypeOracle;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
-import com.googlecode.gwt.dpc.client.Dpc;
+import com.googlecode.gwt.dpc.client.DpcExec;
+import com.googlecode.gwt.dpc.client.DpcRequest;
 import com.googlecode.gwt.dpc.client.DpcServiceAsync;
 import com.googlecode.gwt.dpc.client.DpcServiceFactory;
-import com.googlecode.gwt.dpc.shared.DpcException;
+import com.googlecode.gwt.dpc.shared.Dpc;
 import com.googlecode.gwt.dpc.shared.Input;
 import com.googlecode.gwt.dpc.shared.InputOf;
 
 public class DpcGenerator extends Generator {
 	
-    private DpcInputGenerator inputGenerator;
+    private DpcTypeGenerator typeGenerator;
     private SourceWriterHelp writer;
+    private TreeLogger logger;
 	
 	@Override
 	public String generate(TreeLogger logger, GeneratorContext context, String requestedClass) throws UnableToCompleteException {
+		this.logger = logger;
 		TypeOracle typeOracle = context.getTypeOracle();
 		
 		JClassType objectType = typeOracle.findType(requestedClass);
@@ -51,9 +54,12 @@ public class DpcGenerator extends Generator {
         JClassType[] implementedTypes = objectType.getImplementedInterfaces();
         
         // Check Interfaces
-        if (implementedTypes == null || implementedTypes.length < 2) {
-        	logger.log(TreeLogger.ERROR, "The type " + requestedClass + " has not interfaces or implements only " + Dpc.class.getName() + " interface");
+        if (implementedTypes == null || implementedTypes.length < 1) {
+        	logger.log(TreeLogger.ERROR, "The type " + requestedClass + " doesn't implement any interface.");
             throw new UnableToCompleteException();
+        } else if(implementedTypes.length == 1) {
+        	implementedServices = new JClassType[1];
+        	implementedServices[0] = objectType;
         } else {
         	int numberOfInterfaces = implementedTypes.length - 1;
         	implementedServices = new JClassType[numberOfInterfaces];
@@ -79,7 +85,7 @@ public class DpcGenerator extends Generator {
         composerFactory.addImplementedInterface(objectType.getQualifiedSourceName());
         
         // Input Collection
-        inputGenerator = new DpcInputGenerator(logger, context, requestedClass);
+        typeGenerator = new DpcTypeGenerator(logger, context, requestedClass);
         
         // Write Source
         PrintWriter printWriter = context.tryCreate(logger, implPackageName, implTypeName);
@@ -101,35 +107,42 @@ public class DpcGenerator extends Generator {
             writer.commit(logger);
             
             // Inputs Collection
-            inputGenerator.create();
+            typeGenerator.create();
         }
         return implPackageName + "." + implTypeName;
 	}
 	
-    private void writeMethod(JClassType service, JMethod method) {
+	/**
+	 * Writes the code of the method
+	 * of the service interface.
+	 * @param service Service class descriptor.
+	 * @param method Method class descriptor.
+	 * @throws UnableToCompleteException Exception error.
+	 */
+    private void writeMethod(JClassType service, JMethod method) throws UnableToCompleteException {
     	startMethod(method);
     	ReturnType type = ReturnType.find(method.getReturnType());
     	switch (type) {
-			case CLASS:
-				writeClass(method);
-				break;
 			case PRIMITIVE:
 				writePrimitive(method, type);
 				break;
-			case RESULT:
-				writeResult(service, method);
+			case CLASS:
+				writeClass(service, method);
 				break;
 			default:
-				//TODO Error Case
-				break;
+				String message = "Impossible to determinate the return type of " + method.getName() + " method in " + service.getSimpleSourceName() + " service.";
+				logger.log(TreeLogger.ERROR, message);
+				throw new UnableToCompleteException();
 		}
     	endMethod();
     }
     
-    private void writeClass(JMethod method) {
-    	writer.println("return null;");
-    }
-    
+    /**
+     * Writes body code of method that
+     * returns a primitive value.
+     * @param method Method class descriptor.
+     * @param type Return type.
+     */
     private void writePrimitive(JMethod method, ReturnType type) {
     	JPrimitiveType primitive = type.getPrimitive();
     	if(primitive != JPrimitiveType.VOID) {
@@ -137,35 +150,45 @@ public class DpcGenerator extends Generator {
     		writer.println("return result;");
     	}
     }
+
+	private static final String DPC_REQUEST = DpcRequest.class.getName();
+	private static final String DPC_EXEC = DpcExec.class.getName();
+	private static final String STRING = String.class.getName();
+	private static final String INTEGER = Integer.class.getName();
+	private static final String INPUT = Input.class.getSimpleName();
+	private static final String ARRAY_LIST = ArrayList.class.getSimpleName();
     
-    private void writeResult(JClassType service, JMethod method) {
+	/**
+	 * Writes the body code of method that
+	 * returns an non-primitive value.
+	 * @param service Service class descriptor.
+	 * @param method Method class descriptor.
+	 */
+    private void writeClass(JClassType service, JMethod method) {
     	String className = service.getQualifiedSourceName();
     	String methodName = method.getName();
     	String returnName = method.getReturnType().getQualifiedSourceName();
-    	writer.println("final " + returnName + " _r = new " + returnName + "();");
+    	writer.println("final " + returnName + " _result = new " + returnName + "();")
+		  	  .println(INTEGER + " _id = System.identityHashCode(_result);")
+    		  .println(STRING + " _className = \"" + className + "\";")
+    		  .println(STRING + " _methodName = \"" + methodName + "\";")
+    		  .println(ARRAY_LIST + "<" + STRING + "> _types = new " + ARRAY_LIST + "<" + STRING + ">();")
+    		  .println(ARRAY_LIST + "<" + INPUT + "> _inputs = new " + ARRAY_LIST + "<" + INPUT + ">();");
     	writeResultParameters(method);
-    	writer.println("try {")
-    		  .in().println("this.service.call(\"" + className + "\", \"" + methodName + "\", _types, _inputs, new " + AsyncCallback.class.getSimpleName() + "<" + returnName + ">() {")
-    		 	   .in().println("@Override")
-    		 	   		.println("public void onSuccess(" + returnName + " result) {")
-    		 	   		.in().println("_r.onSuccess(result);").out()
-		    		  	.println("}")
-		    		  	.println("@Override")
-		    		  	.println("public void onFailure(Throwable caught) {")
-		    		  	.in().println("_r.onFailure(caught);").out()
-		    		  	.println("}").out()
-		    		.println("});").out()
-		      .println("} catch (" + DpcException.class.getName() + " _t) {")
-		      .in().println("_r.onFailure(_t);").out()
-		      .println("}")
-    		  .println("return _r;");
+    	writer.println(DPC_REQUEST + " _request = new " + DPC_REQUEST + "(_id, _className, _methodName, _types, _inputs);")
+    		  .println(DPC_EXEC + ".setRequest(_request);")
+    		  .println("return _result;");
+    	typeGenerator.addResult(returnName);
     }
     
+    /**
+     * This method writes the code
+     * to populate the _types and _inputes
+     * arrays with service method input
+     * values and types.
+     * @param method Method class descriptor.
+     */
     private void writeResultParameters(JMethod method) {
-    	String className = ArrayList.class.getSimpleName();
-    	String genericName = Input.class.getSimpleName();
-    	writer.println(className + "<" + String.class.getName() + "> _types = new " + className + "<" + String.class.getName() + ">();");
-    	writer.println(className + "<" + genericName + "> _inputs = new " + className + "<" + genericName + ">();");
     	JParameter[] parameters = method.getParameters();
     	for(JParameter parameter : parameters) {
     		String parameterName = parameter.getName();
@@ -175,22 +198,32 @@ public class DpcGenerator extends Generator {
     			String parameterClass = type.getQualifiedSourceName();
     			writer.println("_types.add(\"" + parameterClass + "\");");
     			writer.println("_inputs.add(new InputOf<" + parameterClass + ">().setValue(" + parameterName + "));");
-				inputGenerator.addClassName(parameterClass);
+				typeGenerator.addInput(parameterClass);
     		} else {
     			String boxedClass = primitive.getQualifiedBoxedSourceName();
     			writer.println("_types.add(\"" + boxedClass + "\");");
     			writer.println("_inputs.add(new InputOf<" + boxedClass + ">().setValue(new " + boxedClass + "(" + parameterName + ")));");
-				inputGenerator.addClassName(boxedClass);
+				typeGenerator.addInput(boxedClass);
     		}
     	}
     }
     
+    /**
+     * Write the code of the
+     * head of the method.
+     * @param method Method class.
+     */
     private void startMethod(JMethod method) {
     	String readableDeclaration = method.getReadableDeclaration(false, true, true, true, true);
     	writer.println(readableDeclaration + " {")
     	      .in();
     }
     
+    /**
+     * Write the code of the
+     * end of the method.
+     * @param method Method class.
+     */
     private void endMethod() {
     	writer.out()
     		  .println("}");

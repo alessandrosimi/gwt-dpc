@@ -16,6 +16,7 @@ import com.googlecode.gwt.dpc.shared.DpcException;
 import com.googlecode.gwt.dpc.shared.Input;
 import com.googlecode.gwt.dpc.shared.InputOf;
 import com.googlecode.gwt.dpc.shared.Result;
+import com.googlecode.gwt.dpc.shared.ResultOf;
 
 /**
  * The server side implementation of the RPC service
@@ -50,9 +51,9 @@ public abstract class DpcServlet extends RemoteServiceServlet implements DpcServ
 	 * the method to invoke.
 	 */
 	@Override
-	public final Result<?> call(String className, String methodName, ArrayList<String> types, ArrayList<Input> inputs) throws DpcException {
+	public final Result call(String className, String methodName, ArrayList<String> types, ArrayList<Input> inputs) throws DpcException {
 		try {
-			Result<?> result = null;
+			Result result = null;
 			Object[] arguments = getArguments(inputs);
 			Class<?>[] classes = getMethodTypes(types);
 			if(classes != null) {
@@ -214,9 +215,10 @@ public abstract class DpcServlet extends RemoteServiceServlet implements DpcServ
 		
 	}
 
-	private Result<?> invokeMethod(Method method, Object instance, Object[] arguments) 
+	private Result invokeMethod(Method method, Object instance, Object[] arguments) 
 		throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
-		return (Result<?>) method.invoke(instance, arguments);
+		Object value = method.invoke(instance, arguments);
+		return (Result) ResultOf.value(value);
 	}
 	
 	/**
@@ -237,6 +239,16 @@ public abstract class DpcServlet extends RemoteServiceServlet implements DpcServ
 			String orginalMessage = throwable.getMessage() != null ? throwable.getMessage() : throwable.getClass().getName();
 			return new DpcException("Impossible to call " + methodName + " method (" + className + " class): " + orginalMessage, throwable);
 		}
+	}
+
+	/**
+	 * This method is never called by the client.
+	 * It is used to register {@link ResultOf} into
+	 * the serialization policy file.
+	 */
+	@Override
+	public ResultOf<Integer> dummy() {
+		return null;
 	}
 
 }

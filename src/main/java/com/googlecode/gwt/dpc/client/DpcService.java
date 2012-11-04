@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import com.googlecode.gwt.dpc.shared.DpcException;
 import com.googlecode.gwt.dpc.shared.Input;
 import com.googlecode.gwt.dpc.shared.Result;
+import com.googlecode.gwt.dpc.shared.ResultOf;
 
 import com.google.gwt.user.client.rpc.RemoteService;
 import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
@@ -15,5 +16,9 @@ import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
  */
 @RemoteServiceRelativePath("dpc")
 public interface DpcService extends RemoteService {
-	public Result<?> call(String className, String methodName, ArrayList<String> types, ArrayList<Input> inputs) throws DpcException;
+	
+	public Result call(String className, String methodName, ArrayList<String> types, ArrayList<Input> inputs) throws DpcException;
+
+	public ResultOf<Integer> dummy();
+	
 }

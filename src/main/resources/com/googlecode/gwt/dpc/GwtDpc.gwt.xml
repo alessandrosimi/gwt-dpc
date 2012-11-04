@@ -6,6 +6,6 @@
 	<source path="shared" />
 
 	<generate-with class="com.googlecode.gwt.dpc.rebind.DpcGenerator">
-		<when-type-assignable class="com.googlecode.gwt.dpc.client.Dpc" />
+		<when-type-assignable class="com.googlecode.gwt.dpc.shared.Dpc" />
 	</generate-with>
 </module>

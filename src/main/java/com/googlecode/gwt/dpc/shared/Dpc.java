@@ -1,4 +1,4 @@
-package com.googlecode.gwt.dpc.client;
+package com.googlecode.gwt.dpc.shared;
 
 /**
  * <p>Interface to mark services. Create an
