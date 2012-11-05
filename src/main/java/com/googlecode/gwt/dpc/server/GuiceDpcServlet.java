@@ -23,7 +23,7 @@ import com.google.inject.util.Modules;
  *   public String getGwtModule() {
  *     return "myapplication";
  *   }
- *   public String getGuiceModule() {
+ *   public Module getGuiceModule() {
  *     return new MyGuiceModule();
  *   }
  * }</pre>
