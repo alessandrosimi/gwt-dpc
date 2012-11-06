@@ -178,7 +178,7 @@ public class DpcGenerator extends Generator {
     	writer.println(DPC_REQUEST + " _request = new " + DPC_REQUEST + "(_id, _className, _methodName, _types, _inputs);")
     		  .println(DPC_EXEC + ".setRequest(_request);")
     		  .println("return _result;");
-    	typeGenerator.addResult(returnName);
+    	typeGenerator.addResult(method.getReturnType());
     }
     
     /**
@@ -198,12 +198,12 @@ public class DpcGenerator extends Generator {
     			String parameterClass = type.getQualifiedSourceName();
     			writer.println("_types.add(\"" + parameterClass + "\");");
     			writer.println("_inputs.add(new InputOf<" + parameterClass + ">().setValue(" + parameterName + "));");
-				typeGenerator.addInput(parameterClass);
+				typeGenerator.addInput(type);
     		} else {
     			String boxedClass = primitive.getQualifiedBoxedSourceName();
     			writer.println("_types.add(\"" + boxedClass + "\");");
     			writer.println("_inputs.add(new InputOf<" + boxedClass + ">().setValue(new " + boxedClass + "(" + parameterName + ")));");
-				typeGenerator.addInput(boxedClass);
+				typeGenerator.addInput(primitive);
     		}
     	}
     }

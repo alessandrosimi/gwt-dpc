@@ -12,6 +12,7 @@ import com.googlecode.gwt.dpc.shared.ResultOf;
 
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
+import com.google.gwt.core.ext.typeinfo.JType;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
 
@@ -63,21 +64,19 @@ public class DpcTypeGenerator {
             // Inputs
             sourceWriter.println("// " + superClass.getSimpleName() + "s");
             for(String name : types) {
-            	String typeName = name.replace(".", "_");
-            	String wrapperName = classOf.toLowerCase() + "_" + typeName;
-                sourceWriter.println("private " + classOf + "<" + name + "> " + wrapperName + ";");
-                sourceWriter.println("private " + name + " " + typeName + ";");
+            	String typeName = name.replace(".", "_").replace("<", "$").replace(">", "");
+                sourceWriter.println("private " + classOf + "<" + name + "> " + typeName + ";");
             }
             sourceWriter.commit(logger);
         }
     }
-    
-    public void addInput(String className) {
-    	inputs.add(className);
+
+    public void addInput(JType type) {
+    	inputs.add(type.getParameterizedQualifiedSourceName());
     }
-    
-    public void addResult(String className) {
-    	results.add(className);
+
+    public void addResult(JType type) {
+    	results.add(type.getParameterizedQualifiedSourceName());
     }
 
 }
