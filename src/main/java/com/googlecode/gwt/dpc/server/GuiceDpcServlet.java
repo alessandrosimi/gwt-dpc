@@ -1,5 +1,10 @@
 package com.googlecode.gwt.dpc.server;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.aopalliance.intercept.MethodInterceptor;
+
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
@@ -40,19 +45,20 @@ import com.google.inject.util.Modules;
  * <p>The context listener must be configured into <code>web.xml
  * </code> file with the standard Guice configuration.</p>
  * <pre>
- * &lt;filter&gt;
- *   &lt;filter-name&gt;guiceFilter&lt;/filter-name&gt;
- *   &lt;filter-class&gt;com.google.inject.servlet.GuiceFilter&lt;/filter-class&gt;
- * &lt;/filter&gt;
+ * {@code
+ * <filter>
+ *   <filter-name>guiceFilter</filter-name>
+ *   <filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
+ * </filter>
  * 
- * &lt;filter-mapping&gt;
- *   &lt;filter-name&gt;guiceFilter&lt;/filter-name&gt;
- *   &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
- * &lt;/filter-mapping&gt;
+ * <filter-mapping>
+ *   <filter-name>guiceFilter</filter-name>
+ *   <url-pattern>/*</url-pattern>
+ * </filter-mapping>
  * 
- * &lt;listener&gt;
- *   &lt;listener-class&gt;my.application.MyContextListener&lt;/listener-class&gt;
- * &lt;/listener&gt;</pre>
+ * <listener>
+ *   <listener-class>my.application.MyContextListener</listener-class>
+ * </listener>}</pre>
  * <p>The context listener must be configured as a web application
  * listener.</p>
  * @author alessandro.simi@gmail.com
@@ -60,7 +66,7 @@ import com.google.inject.util.Modules;
 public abstract class GuiceDpcServlet extends GuiceServletContextListener {
 
 	@Override
-	final protected Injector getInjector() {
+	protected final Injector getInjector() {
 		Module module = getGuiceModule();
 		if(module == null) module = new DpcServletModule();
 		else module = Modules.combine(module, new DpcServletModule());
@@ -88,7 +94,7 @@ public abstract class GuiceDpcServlet extends GuiceServletContextListener {
 			if(!module.startsWith("/")) module = "/" + module;
 			if(module.endsWith("/")) module.substring(0, module.length() - 1);
 		} else {
-			throw new RuntimeException("The getGwtModule() methos mustn't return a null value.");
+			throw new RuntimeException("The getGwtModule() method mustn't return a null value.");
 		}
 		return module;
 	}
@@ -98,8 +104,22 @@ public abstract class GuiceDpcServlet extends GuiceServletContextListener {
 	 */
 	protected abstract String getGwtModule();
 	
+	/**
+	 * <p>Adds interceptors at the remote call to execute
+	 * code before and after a service is called.</p>
+	 * @param interceptor type of Interceptor to add.
+	 */
+	@SuppressWarnings("unchecked")
+	protected final <I extends MethodInterceptor> void addInterceptor(Class<I> interceptor) {
+		if(interceptor != null) {
+			interceptors.add((Class<MethodInterceptor>) interceptor);
+		}
+	}
+		
+	private static List<Class<MethodInterceptor>> interceptors = new ArrayList<Class<MethodInterceptor>>();
+	
 	@SuppressWarnings("serial") @Singleton
-	static public class GuiceServlet extends DpcServlet {
+	public final static class GuiceServlet extends DpcServlet {
 
 		@Inject private Injector injector;	
 		
@@ -107,6 +127,15 @@ public abstract class GuiceDpcServlet extends GuiceServletContextListener {
 		@Override
 		final protected <I, S extends I> S getInstance(Class<I> interfaceClass) {
 			return (S) injector.getInstance(interfaceClass);
+		}
+
+		@Override
+		protected List<MethodInterceptor> getInterceptors() {
+			List<MethodInterceptor> result = new ArrayList<MethodInterceptor>();
+			for(Class<MethodInterceptor> clazz : interceptors) {
+				result.add(injector.getInstance(clazz));
+			}
+			return result;
 		}
 		
 	}

@@ -1,7 +1,11 @@
 package com.googlecode.gwt.dpc.server;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.aopalliance.intercept.MethodInterceptor;
 
 /**
  * <p>Simple Dpc servlet storing implementations of services
@@ -20,19 +24,20 @@ import java.util.Map;
  * }</pre>
  * <p>The servlet must be configured into <code>web.xml</code>
  * web application file descriptor with <code>url-pattern</code>
- * listening to <b>/&lt;module&gt;/dpc</b>, where <code>module
+ * listening to <b>/{@code<module>}/dpc</b>, where <code>module
  * </code> is the name of the Gwt module.</p>
  * <pre>
- * &lt;servlet&gt;
- *   &lt;servlet-name&gt;myServlet&lt;/servlet-name&gt;
- *   &lt;servlet-class&gt;my.application.MyServlet&lt;/servlet-class&gt;
- * &lt;/servlet&gt;
+ * {@code
+ * <servlet>
+ *   <servlet-name>myServlet</servlet-name>
+ *   <servlet-class>my.application.MyServlet</servlet-class>
+ * </servlet>
  * 
- * &lt;servlet-mapping&gt;
- *   &lt;servlet-name&gt;myServlet&lt;/servlet-name&gt;
- *   &lt;url-pattern&gt;/myapplication/dpc&lt;/url-pattern&gt;
- * &lt;/servlet-mapping&gt;
- * </pre>
+ * <servlet-mapping>
+ *   <servlet-name>myServlet</servlet-name>
+ *   <url-pattern>/myapplication/dpc</url-pattern>
+ * </servlet-mapping>
+ * }</pre>
  * It is possible to add more than one service interface to the
  * servlet.
  * @author alessandro.simi@gmail.com
@@ -46,7 +51,7 @@ public abstract class SimpleDpcServlet extends DpcServlet {
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	final protected <I, S extends I> S getInstance(Class<I> interfaceClass) {
+	protected final <I, S extends I> S getInstance(Class<I> interfaceClass) {
 		if(instances == null) {
 			instances = new HashMap<Class<?>, Object>();
 			configure();
@@ -55,13 +60,31 @@ public abstract class SimpleDpcServlet extends DpcServlet {
 	}
 
 	/**
-	 * <p>Add the mapping between the service interface and its
+	 * <p>Adds the mapping between the service interface and its
 	 * instance.</p>
 	 * @param interfaceClass service interface
 	 * @param instance instance of the service.
 	 */
-	final protected <I, S extends I> void add(Class<I> interfaceClass, S instance) {
+	protected final <I, S extends I> void add(Class<I> interfaceClass, S instance) {
 		instances.put(interfaceClass, instance);
+	}
+	
+	private List<MethodInterceptor> interceptors = new ArrayList<MethodInterceptor>();
+	
+	@Override
+	protected List<MethodInterceptor> getInterceptors() {
+		return interceptors;
+	}
+
+	/**
+	 * <p>Adds interceptors at the remote call to execute
+	 * code before and after a service is called.</p>
+	 * @param interceptor Interceptor to add.
+	 */
+	protected final <I extends MethodInterceptor> void addInterceptor(I interceptor) {
+		if(interceptor != null) {
+			interceptors.add(interceptor);
+		}
 	}
 
 }
