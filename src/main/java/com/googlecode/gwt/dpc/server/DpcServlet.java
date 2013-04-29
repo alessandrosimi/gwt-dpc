@@ -64,7 +64,7 @@ public abstract class DpcServlet extends RemoteServiceServlet implements DpcServ
 			invocation.setMethod(methodName, types);
 			invocation.setArguments(inputs);
 			invocation.setInterceptors(getInterceptors());
-			return (Result) invocation.proceed();
+			return ResultOf.value(invocation.proceed());
 		} catch(Throwable throwable) {
 			throw getException(className, methodName, throwable);
 		}
@@ -207,8 +207,7 @@ public abstract class DpcServlet extends RemoteServiceServlet implements DpcServ
 				MethodInterceptor interceptor = iterator.next();
 				return interceptor.invoke(this);
 			} else {
-				Object result = method.invoke(instance, arguments);
-				return ResultOf.value(result);
+				return method.invoke(instance, arguments);
 			}
 		}
 

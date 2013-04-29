@@ -72,7 +72,7 @@ public abstract class SimpleDpcServlet extends DpcServlet {
 	private List<MethodInterceptor> interceptors = new ArrayList<MethodInterceptor>();
 	
 	@Override
-	protected List<MethodInterceptor> getInterceptors() {
+	protected final List<MethodInterceptor> getInterceptors() {
 		return interceptors;
 	}
 

@@ -121,34 +121,14 @@ public class DpcGenerator extends Generator {
 	 */
     private void writeMethod(JClassType service, JMethod method) throws UnableToCompleteException {
     	startMethod(method);
-    	ReturnType type = ReturnType.find(method.getReturnType());
-    	switch (type) {
-			case PRIMITIVE:
-				writePrimitive(method, type);
-				break;
-			case CLASS:
-				writeClass(service, method);
-				break;
-			default:
-				String message = "Impossible to determinate the return type of " + method.getName() + " method in " + service.getSimpleSourceName() + " service.";
-				logger.log(TreeLogger.ERROR, message);
-				throw new UnableToCompleteException();
+    	if(method.getReturnType().isPrimitive() != null || method.getReturnType().isClass() != null) {
+    		writeRequest(service, method);
+		} else {
+			String message = "Impossible to determinate the return type of " + method.getName() + " method in " + service.getSimpleSourceName() + " service.";
+			logger.log(TreeLogger.ERROR, message);
+			throw new UnableToCompleteException();
 		}
     	endMethod();
-    }
-    
-    /**
-     * Writes body code of method that
-     * returns a primitive value.
-     * @param method Method class descriptor.
-     * @param type Return type.
-     */
-    private void writePrimitive(JMethod method, ReturnType type) {
-    	JPrimitiveType primitive = type.getPrimitive();
-    	if(primitive != JPrimitiveType.VOID) {
-    		writer.println(primitive.getQualifiedSourceName() + " result;");
-    		writer.println("return result;");
-    	}
     }
 
 	private static final String DPC_REQUEST = DpcRequest.class.getName();
@@ -158,27 +138,54 @@ public class DpcGenerator extends Generator {
 	private static final String INPUT = Input.class.getSimpleName();
 	private static final String ARRAY_LIST = ArrayList.class.getSimpleName();
     
-	/**
+    /**
 	 * Writes the body code of method that
 	 * returns an non-primitive value.
 	 * @param service Service class descriptor.
 	 * @param method Method class descriptor.
-	 */
-    private void writeClass(JClassType service, JMethod method) {
+     */
+    private void writeRequest(JClassType service, JMethod method) {
     	String className = service.getQualifiedSourceName();
     	String methodName = method.getName();
-    	String returnName = method.getReturnType().getQualifiedSourceName();
-    	writer.println("final " + returnName + " _result = new " + returnName + "();")
-		  	  .println(INTEGER + " _id = System.identityHashCode(_result);")
-    		  .println(STRING + " _className = \"" + className + "\";")
-    		  .println(STRING + " _methodName = \"" + methodName + "\";")
-    		  .println(ARRAY_LIST + "<" + STRING + "> _types = new " + ARRAY_LIST + "<" + STRING + ">();")
-    		  .println(ARRAY_LIST + "<" + INPUT + "> _inputs = new " + ARRAY_LIST + "<" + INPUT + ">();");
-    	writeResultParameters(method);
-    	writer.println(DPC_REQUEST + " _request = new " + DPC_REQUEST + "(_id, _className, _methodName, _types, _inputs);")
-    		  .println(DPC_EXEC + ".setRequest(_request);")
-    		  .println("return _result;");
-    	typeGenerator.addResult(method.getReturnType());
+    	JType returnType = method.getReturnType();
+    	JPrimitiveType primitive = getPrimitiveOrBoxed(returnType);
+    	// Result
+    	if(primitive != null) {
+        	writer.println("%s _result = %s;", primitive.getQualifiedBoxedSourceName(), primitive.getUninitializedFieldExpression());
+    	} else {
+        	String returnName = returnType.getQualifiedSourceName();
+    		writer.println("final " + returnName + " _result = new " + returnName + "();");
+    	}
+    	// Call
+    	writer.println(INTEGER + " _id = System.identityHashCode(_result);")
+			  .println(STRING + " _className = \"" + className + "\";")
+			  .println(STRING + " _methodName = \"" + methodName + "\";")
+			  .println(ARRAY_LIST + "<" + STRING + "> _types = new " + ARRAY_LIST + "<" + STRING + ">();")
+			  .println(ARRAY_LIST + "<" + INPUT + "> _inputs = new " + ARRAY_LIST + "<" + INPUT + ">();");
+		writeResultParameters(method);
+		writer.println(DPC_REQUEST + " _request = new " + DPC_REQUEST + "(_id, _className, _methodName, _types, _inputs);");
+		// Return
+		if(primitive == null || !primitive.equals(JPrimitiveType.VOID)) {
+			writer.println(DPC_EXEC + ".setRequest(_request);")
+			      .println("return _result;");
+		} else {
+			writer.println(DPC_EXEC + ".sendRequest(_request, null);");
+		}
+    	typeGenerator.addResult(returnType);
+    }
+    
+    /**
+     * Gets the primitive type from a type
+     * if primitive or a boxed.
+     */
+    private JPrimitiveType getPrimitiveOrBoxed(JType type) {
+    	JPrimitiveType primitive = type.isPrimitive();
+		for(JPrimitiveType p : JPrimitiveType.values()) {
+			if(p.getQualifiedBoxedSourceName().equals(type.getQualifiedSourceName())) {
+				primitive = p;
+			}
+		}
+    	return primitive;
     }
     
     /**
@@ -198,13 +205,12 @@ public class DpcGenerator extends Generator {
     			String parameterClass = type.getQualifiedSourceName();
     			writer.println("_types.add(\"" + parameterClass + "\");");
     			writer.println("_inputs.add(new InputOf<" + parameterClass + ">().setValue(" + parameterName + "));");
-				typeGenerator.addInput(type);
     		} else {
     			String boxedClass = primitive.getQualifiedBoxedSourceName();
     			writer.println("_types.add(\"" + boxedClass + "\");");
-    			writer.println("_inputs.add(new InputOf<" + boxedClass + ">().setValue(new " + boxedClass + "(" + parameterName + ")));");
-				typeGenerator.addInput(primitive);
+    			writer.println("_inputs.add(new InputOf<" + boxedClass + ">().setValue(new " + boxedClass + "(" + parameterName + ")));");	
     		}
+    		typeGenerator.addInput(type);
     	}
     }
     

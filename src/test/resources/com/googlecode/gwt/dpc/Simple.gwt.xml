@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module rename-to="test_module">
+
+	<!-- Standard -->
+	<inherits name="com.google.gwt.user.User" />
+	<inherits name="com.google.gwt.core.Core" />
+	
+	<!-- Gwt Dpc -->
+	<inherits name="com.googlecode.gwt.dpc.GwtDpc"/>
+
+	<!-- Translatable Code -->
+	<source path="client" />
+	<source path="shared" />
+	
+	<!-- Servlet -->
+	<servlet path="/dpc" class="com.googlecode.gwt.dpc.server.SimpleServlet" />
+
+</module>

@@ -12,6 +12,7 @@ import com.googlecode.gwt.dpc.shared.ResultOf;
 
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.TreeLogger;
+import com.google.gwt.core.ext.typeinfo.JPrimitiveType;
 import com.google.gwt.core.ext.typeinfo.JType;
 import com.google.gwt.user.rebind.ClassSourceFileComposerFactory;
 import com.google.gwt.user.rebind.SourceWriter;
@@ -72,11 +73,20 @@ public class DpcTypeGenerator {
     }
 
     public void addInput(JType type) {
-    	inputs.add(type.getParameterizedQualifiedSourceName());
+    	inputs.add(getType(type));
     }
 
     public void addResult(JType type) {
-    	results.add(type.getParameterizedQualifiedSourceName());
+    	results.add(getType(type));
+    }
+    
+    private String getType(JType type) {
+    	JPrimitiveType primitive = type.isPrimitive();
+    	if(primitive != null) {
+    		return primitive.getQualifiedBoxedSourceName();
+    	} else {
+    		return type.getParameterizedQualifiedSourceName();
+    	}
     }
 
 }
