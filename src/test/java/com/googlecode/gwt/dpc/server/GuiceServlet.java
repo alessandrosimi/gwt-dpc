@@ -11,6 +11,8 @@ public class GuiceServlet extends GuiceDpcServlet {
 		return new AbstractModule() {
 			@Override
 			public void configure() {
+				addInterceptor(null);
+				addInterceptor(RemoveSpaceInterceptor.class);
 				bind(Service.class).to(ServiceImpl.class);
 			}
 		};

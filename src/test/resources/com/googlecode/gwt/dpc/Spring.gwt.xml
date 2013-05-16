@@ -13,6 +13,6 @@
 	<source path="shared" />
 	
 	<!-- Servlet -->
-	<servlet path="/dpc" class="com.googlecode.gwt.dpc.server.GuiceWrapperServlet" />
+	<servlet path="/dpc" class="com.googlecode.gwt.dpc.server.SpringWrapperServlet" />
 
 </module>

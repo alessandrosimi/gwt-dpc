@@ -53,7 +53,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
  * @author alessandro.simi@gmail.com
  */
 @SuppressWarnings("serial")
-public class SpringDpcServlet extends DpcServlet {
+public final class SpringDpcServlet extends DpcServlet {
 
 	private ApplicationContext applicationContext;
 	
@@ -79,16 +79,16 @@ public class SpringDpcServlet extends DpcServlet {
 	@Override
 	protected final List<MethodInterceptor> getInterceptors() {
 		List<MethodInterceptor> interceptors = new ArrayList<MethodInterceptor>();
-		Map<?,?> beans = applicationContext.getBeansOfType(Interceptorcontainer.class);
+		Map<?,?> beans = applicationContext.getBeansOfType(InterceptorContainer.class);
 		if(beans != null && !beans.isEmpty()) {
 			for(Object container : beans.values()) {
-				interceptors.addAll(((Interceptorcontainer) container).getInterceptors());
+				interceptors.addAll(((InterceptorContainer) container).getInterceptors());
 			}
 		}
 		return interceptors;
 	}
 	
-	public static class Interceptorcontainer {
+	public static final class InterceptorContainer {
 		
 		private List<MethodInterceptor> interceptors = new ArrayList<MethodInterceptor>();
 

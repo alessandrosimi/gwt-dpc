@@ -6,6 +6,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -36,6 +38,8 @@ import com.googlecode.gwt.dpc.shared.ResultOf;
 @SuppressWarnings("serial")
 public abstract class DpcServlet extends RemoteServiceServlet implements DpcService {
 		
+	private final static Logger logger = Logger.getLogger(DpcServlet.class.getName());
+	
 	/**
 	 * <p>The method implementation of the {@link DpcService}
 	 * interface and calls the method specified into the
@@ -97,8 +101,10 @@ public abstract class DpcServlet extends RemoteServiceServlet implements DpcServ
 			throwable = ((InvocationTargetException) throwable).getTargetException();
 			return new DpcException(throwable);
 		} else {
+			String message = "Impossible to call \"" + methodName + "\" method (" + className + ")";
+			logger.log(Level.SEVERE, message + ".", throwable);
 			String orginalMessage = throwable.getMessage() != null ? throwable.getMessage() : throwable.getClass().getName();
-			return new DpcException("Impossible to call " + methodName + " method (" + className + " class): " + orginalMessage, throwable);
+			return new DpcException(message + ": " + orginalMessage);
 		}
 	}
 	

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean id="myService" class="com.googlecode.gwt.dpc.server.ServiceImpl" />
+	
+	<bean id="myOtherService" class="com.googlecode.gwt.dpc.server.ServiceImpl" />
+
+	<bean id="removeSpace" class="com.googlecode.gwt.dpc.server.RemoveSpaceInterceptor" />
+	
+	<bean id="interceptorContainer" class="com.googlecode.gwt.dpc.server.SpringDpcServlet$InterceptorContainer">
+		<property name="interceptors">
+			<list>
+				<ref bean="removeSpace" />
+			</list>
+		</property>
+	</bean>
+
+</beans>

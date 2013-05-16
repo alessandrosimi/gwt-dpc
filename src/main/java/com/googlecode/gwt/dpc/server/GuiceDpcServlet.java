@@ -119,7 +119,7 @@ public abstract class GuiceDpcServlet extends GuiceServletContextListener {
 	private static List<Class<MethodInterceptor>> interceptors = new ArrayList<Class<MethodInterceptor>>();
 	
 	@SuppressWarnings("serial") @Singleton
-	public final static class GuiceServlet extends DpcServlet {
+	public static class GuiceServlet extends DpcServlet {
 
 		@Inject private Injector injector;	
 		
